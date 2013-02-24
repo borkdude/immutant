@@ -21,7 +21,8 @@
         immutant.test.helpers)
   (:require [immutant.registry :as registry]
             [clojure.java.io   :as io]
-            [dynapath.util     :as dp]))
+            [dynapath.util     :as dp]
+            [immutant.dev      :as dev]))
 
 (def a-value (atom "ham"))
 
@@ -31,6 +32,7 @@
 (use-fixtures :each
               (fn [f]
                 (reset! a-value "ham")
+                (dev/remove-lib 'immutant.init)
                 (f)))
 
 (defn do-nothing [])
@@ -71,8 +73,8 @@
   (registry/put :project '{:ring {:handler guestbook.handler/war-handler
                                   :init    guestbook.handler/init
                                   :destroy guestbook.handler/destroy}})
-  (init-by-ring)
-  (let [[handler & {:keys [init destroy]}] @a-value]
-    (is (= "war-handler" (handler)))
-    (is (= "init" (init)))
-    (is (= "destroy" (destroy)))))
+  (initialize nil nil)
+  (let [[handler & {:keys [init destroy]}] (if (list? @a-value) @a-value)]
+    (is (= "war-handler" (if (fn? handler) (handler))))
+    (is (= "init" (if (fn? init) (init))))
+    (is (= "destroy" (if (fn? destroy) (destroy))))))
