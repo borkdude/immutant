@@ -21,6 +21,12 @@
         clojure.core.cache
         [clojure.java.io :as io]))
 
+(use-fixtures :once (fn [f]
+                      ;;warm up decode, since it dynamically requires tools.reader
+                      (immutant.codecs/decode ":foo" :edn)
+                      (immutant.codecs/decode ":foo" :clojure)
+                      (f)))
+
 (deftest test-lookup-by-list
   (is (= :foo (lookup (miss (cache "foo") '(bar) :foo) '(bar)))))
 
