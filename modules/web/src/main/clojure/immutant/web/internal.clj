@@ -76,13 +76,14 @@
       vh
       [vh])))
 
-(defn install-servlet [servlet-class sub-context-path]
+(defn install-servlet [servlet sub-context-path]
   (let [context (registry/get "web-context")
         name (servlet-name sub-context-path)
         wrapper (.createWrapper context)
         mapper (-> (registry/get "jboss.web")
                    (.getService)
                    (.getMapper))
+        servlet-class (.getName (class servlet))
         complete (promise)]
     (if (and
          (when-context-available
@@ -90,6 +91,7 @@
           (doto wrapper
             (.setName name)
             (.setServletClass servlet-class)
+            (.setServlet servlet)
             (.setEnabled true)
             (.setDynamic true)
             (.setAsyncSupported true)

@@ -24,7 +24,8 @@
             [ring.util.response     :as response])
   (:use [immutant.web.internal :exclude [current-servlet-request]])
   (:use [immutant.web.middleware :only [add-middleware]])
-  (:import javax.servlet.http.HttpServletRequest))
+  (:import javax.servlet.http.HttpServletRequest
+           org.immutant.web.servlet.RingServlet))
 
 (declare stop start*)
 
@@ -72,8 +73,7 @@
          (log/info "Registering ring handler at sub-context path:" sub-context-path)
          (store-servlet-info!
           servlet-name
-          {:wrapper (install-servlet "org.immutant.web.servlet.RingServlet"
-                                     sub-context-path)
+          {:wrapper (install-servlet (RingServlet.) sub-context-path)
            :sub-context sub-context-path
            :handler handler
            :destroy destroy})
