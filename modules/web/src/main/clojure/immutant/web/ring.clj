@@ -17,9 +17,8 @@
 
 (ns ^{:no-doc true} immutant.web.ring
   (:use immutant.web.internal)
-  (:require [clojure.string    :as string]
-            [ring.util.servlet :as servlet])
-  (:import (javax.servlet.http HttpServletRequest HttpServletResponse)))
+  (:require [ring.util.servlet :as servlet])
+  (:import javax.servlet.http.HttpServletRequest))
 
 (defn- context [^HttpServletRequest request]
   (str (.getContextPath request)
@@ -33,18 +32,19 @@
       "/"
       path-info)))
 
-(defn handle-request [servlet-name
-                      ^HttpServletRequest request
-                      ^HttpServletResponse response]
-  (.setCharacterEncoding response "UTF-8")
-  (let [{:keys [handler sub-context]} (get-servlet-info servlet-name)]
-    (if handler
+(defn create-servlet [handler init-fn destroy-fn]
+  (proxy [javax.servlet.GenericServlet] []
+    (init
+      ([] (and init-fn (init-fn)))
+      ([config] (proxy-super init config)))
+    (destroy [] (and destroy-fn (destroy-fn)))
+    (service [request response]
+      (.setCharacterEncoding response "UTF-8")
       (if-let [response-map (binding [current-servlet-request request]
                               (handler
                                (assoc (servlet/build-request-map request)
                                  :context (context request)
                                  :path-info (path-info request))))]
         (servlet/update-servlet-response response response-map)
-        (throw (NullPointerException. "Handler returned nil.")))
-      (throw (IllegalArgumentException. (str "No handler function found for " servlet-name))))))
+        (throw (NullPointerException. "Handler returned nil."))))))
 

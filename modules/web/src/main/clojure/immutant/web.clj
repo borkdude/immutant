@@ -21,11 +21,11 @@
   (:require [clojure.tools.logging  :as log]
             [immutant.util          :as util]
             [ring.util.codec        :as codec]
-            [ring.util.response     :as response])
+            [ring.util.response     :as response]
+            [immutant.web.ring      :as ring])
   (:use [immutant.web.internal :exclude [current-servlet-request]])
   (:use [immutant.web.middleware :only [add-middleware]])
-  (:import javax.servlet.http.HttpServletRequest
-           org.immutant.web.servlet.RingServlet))
+  (:import javax.servlet.http.HttpServletRequest))
 
 (declare stop start*)
 
@@ -63,22 +63,13 @@
    (let [handler (add-middleware handler opts)
          sub-context-path (normalize-subcontext-path sub-context-path)
          servlet-name (servlet-name sub-context-path)]
-     (if-let [existing-info (get-servlet-info servlet-name)]
-       (do
-         (log/debug "Updating ring handler at sub-context path:" sub-context-path)
-         (store-servlet-info!
-          servlet-name
-          (assoc existing-info :handler handler)))
-       (do
-         (log/info "Registering ring handler at sub-context path:" sub-context-path)
-         (store-servlet-info!
-          servlet-name
-          {:wrapper (install-servlet (RingServlet.) sub-context-path)
-           :sub-context sub-context-path
-           :handler handler
-           :destroy destroy})
-         (util/at-exit #(stop sub-context-path))
-         (and init (init))))
+     (when (get-servlet-info servlet-name)
+       (stop sub-context-path))
+     (log/info "Registering ring handler at sub-context path:" sub-context-path)
+     (store-servlet-info!
+      servlet-name
+      {:wrapper (install-servlet (ring/create-servlet handler init destroy) sub-context-path)})
+     (util/at-exit #(stop sub-context-path))
      nil)
    (log/warn "web/start called outside of Immutant, ignoring")))
 
@@ -91,11 +82,10 @@
   ([sub-context-path]
      (util/if-in-immutant
       (let [sub-context-path (normalize-subcontext-path sub-context-path)]
-        (if-let [{:keys [wrapper destroy]} (remove-servlet-info! (servlet-name sub-context-path))]
+        (if-let [{:keys [wrapper]} (remove-servlet-info! (servlet-name sub-context-path))]
           (do
             (log/info "Deregistering ring handler at sub-context path:" sub-context-path)
-            (remove-servlet sub-context-path wrapper)
-            (and destroy (destroy)))
+            (remove-servlet sub-context-path wrapper))
           (log/warn "Attempted to deregister ring handler at sub-context path:" sub-context-path ", but none found")))
       (log/warn "web/stop called outside of Immutant, ignoring"))))
 
