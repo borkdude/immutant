@@ -29,13 +29,6 @@
 
 (declare stop start*)
 
-(defn ^HttpServletRequest current-servlet-request
-  "Returns the currently active HttpServletRequest. This will only
-  return a value within an active ring handler. Standard ring handlers
-  should never need to access this value."
-  []
-  immutant.web.internal/current-servlet-request)
-
 (defmacro start
   "Registers a Ring handler that will be called when requests
    are received on the given sub-context-path. If no sub-context-path
@@ -68,8 +61,10 @@
      (log/info "Registering ring handler at sub-context path:" sub-context-path)
      (store-servlet-info!
       servlet-name
-      {:wrapper (install-servlet (ring/create-servlet handler init destroy) sub-context-path)})
+      {:wrapper (install-servlet (ring/create-servlet handler) sub-context-path)
+       :destroy destroy})
      (util/at-exit #(stop sub-context-path))
+     (and init (init))
      nil)
    (log/warn "web/start called outside of Immutant, ignoring")))
 
@@ -82,12 +77,20 @@
   ([sub-context-path]
      (util/if-in-immutant
       (let [sub-context-path (normalize-subcontext-path sub-context-path)]
-        (if-let [{:keys [wrapper]} (remove-servlet-info! (servlet-name sub-context-path))]
+        (if-let [{:keys [wrapper destroy]} (remove-servlet-info! (servlet-name sub-context-path))]
           (do
             (log/info "Deregistering ring handler at sub-context path:" sub-context-path)
-            (remove-servlet sub-context-path wrapper))
+            (remove-servlet sub-context-path wrapper)
+            (and destroy (destroy)))
           (log/warn "Attempted to deregister ring handler at sub-context path:" sub-context-path ", but none found")))
       (log/warn "web/stop called outside of Immutant, ignoring"))))
+
+(defn ^HttpServletRequest current-servlet-request
+  "Returns the currently active HttpServletRequest. This will only
+  return a value within an active ring handler. Standard ring handlers
+  should never need to access this value."
+  []
+  immutant.web.internal/current-servlet-request)
 
 (defn wrap-resource
   "Temporary workaround for its non-context-aware namesake from
