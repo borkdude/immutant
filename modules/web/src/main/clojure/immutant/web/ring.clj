@@ -35,14 +35,23 @@
 (defn create-servlet [handler]
   (reify javax.servlet.Servlet
     (service [_ request response]
-      (.setCharacterEncoding response "UTF-8")
-      (if-let [response-map (binding [current-servlet-request request]
-                              (handler
-                               (assoc (servlet/build-request-map request)
-                                 :context (context request)
-                                 :path-info (path-info request))))]
-        (servlet/update-servlet-response response response-map)
-        (throw (NullPointerException. "Handler returned nil."))))
+      ;; not everything uses baseLoader like it should, and expects
+      ;; the TCCL to be set instead, so we do so
+      ;; I'm glaring at you, clojurescript
+      (let [cur-thread (Thread/currentThread)
+            orig-cl (.getContextClassLoader cur-thread)]
+        (.setContextClassLoader cur-thread (clojure.lang.RT/baseLoader))
+        (try
+          (.setCharacterEncoding response "UTF-8")
+          (if-let [response-map (binding [current-servlet-request request]
+                                  (handler
+                                   (assoc (servlet/build-request-map request)
+                                     :context (context request)
+                                     :path-info (path-info request))))]
+            (servlet/update-servlet-response response response-map)
+            (throw (NullPointerException. "Handler returned nil.")))
+          (finally
+            (.setContextClassLoader cur-thread orig-cl)))))
     (init [_ _])
     (destroy [_])))
 
