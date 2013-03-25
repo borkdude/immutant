@@ -16,14 +16,13 @@
 ;; 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 (ns immutant.integs.web.noir
-  (:use [fntest.core])
-  (:use clojure.test)
+  (:use fntest.core
+        clojure.test
+        immutant.integs)
   (:require [clj-http.client :as client]))
 
 (defn run-tests? []
-  (not (.startsWith 
-        (:full immutant.integs/*current-clojure-version*)
-        "1.5")))
+  (not (version? 1.5)))
 
 (let [file *file*]
   (use-fixtures :once #(if (run-tests?)
