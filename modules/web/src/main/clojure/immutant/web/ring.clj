@@ -16,7 +16,8 @@
 ;; 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 (ns ^{:no-doc true} immutant.web.ring
-  (:use [immutant.web.internal :only [current-servlet-request]])
+  (:use [immutant.web.internal :only [current-servlet-request]]
+        [immutant.util :only [with-tccl]])
   (:require [ring.util.servlet :as servlet])
   (:import javax.servlet.http.HttpServletRequest))
 
@@ -35,23 +36,30 @@
 (defn create-servlet [handler]
   (reify javax.servlet.Servlet
     (service [_ request response]
-      ;; not everything uses baseLoader like it should, and expects
-      ;; the TCCL to be set instead, so we do so
-      ;; I'm glaring at you, clojurescript
-      (let [cur-thread (Thread/currentThread)
-            orig-cl (.getContextClassLoader cur-thread)]
-        (.setContextClassLoader cur-thread (clojure.lang.RT/baseLoader))
-        (try
-          (.setCharacterEncoding response "UTF-8")
-          (if-let [response-map (binding [current-servlet-request request]
-                                  (handler
-                                   (assoc (servlet/build-request-map request)
-                                     :context (context request)
-                                     :path-info (path-info request))))]
-            (servlet/update-servlet-response response response-map)
-            (throw (NullPointerException. "Handler returned nil.")))
-          (finally
-            (.setContextClassLoader cur-thread orig-cl)))))
+      (with-tccl
+        (.setCharacterEncoding response "UTF-8")
+        (if-let [response-map (binding [current-servlet-request request]
+                                (handler
+                                 (assoc (servlet/build-request-map request)
+                                   :context (context request)
+                                   :path-info (path-info request))))]
+          (servlet/update-servlet-response response response-map)
+          (throw (NullPointerException. "Handler returned nil.")))))
     (init [_ _])
     (destroy [_])))
 
+(deftype ServletProxy [servlet]
+  javax.servlet.Servlet
+  (init [_ config]
+    (with-tccl (.init servlet config)))
+  (service [_ request response]
+    (with-tccl (.service servlet request response)))
+  (destroy [_]
+    (.destroy servlet))
+  (getServletConfig [_]
+    (.getServletConfig servlet))
+  (getServletInfo [_]
+    (.getServletInfo servlet)))
+
+(defn proxy-servlet [servlet]
+  (::ServletProxy servlet))
