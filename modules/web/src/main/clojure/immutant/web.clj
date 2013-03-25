@@ -21,8 +21,8 @@
   (:require [clojure.tools.logging  :as log]
             [ring.util.codec        :as codec]
             [ring.util.response     :as response]
-            [immutant.web.ring      :as ring])
-  (:use [immutant.web.internal :exclude [current-servlet-request]]
+            [immutant.web.servlet   :as servlet])
+  (:use [immutant.web.internal :only [start* stop*]]
         [immutant.web.middleware :only [add-middleware]])
   (:import javax.servlet.http.HttpServletRequest))
 
@@ -31,7 +31,7 @@
   [sub-context-path servlet]
   (log/info "Registering servlet at sub-context path:" sub-context-path)
   (start* sub-context-path
-          (ring/proxy-servlet servlet)
+          (servlet/proxy-servlet servlet)
           {}))
 
 (defn start-handler
@@ -39,7 +39,7 @@
   [sub-context-path handler & {:keys [init destroy] :as opts}]
   (log/info "Registering ring handler at sub-context path:" sub-context-path)
   (start* sub-context-path
-          (ring/create-servlet (add-middleware handler opts))
+          (servlet/create-servlet (add-middleware handler opts))
           opts))
 
 (defmacro start

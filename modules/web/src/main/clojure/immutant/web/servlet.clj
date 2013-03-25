@@ -15,7 +15,7 @@
 ;; Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 ;; 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-(ns ^{:no-doc true} immutant.web.ring
+(ns ^{:no-doc true} immutant.web.servlet
   (:use [immutant.web.internal :only [current-servlet-request]]
         [immutant.util :only [with-tccl]])
   (:require [ring.util.servlet :as servlet])
