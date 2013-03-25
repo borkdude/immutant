@@ -137,7 +137,6 @@
 
 (defn start*
   [sub-context-path servlet {:keys [init destroy] :as opts}]
-  (log/info "JC: start*" opts)
   (util/if-in-immutant
    (let [sub-context-path (normalize-subcontext-path sub-context-path)
          servlet-name (servlet-name sub-context-path)]

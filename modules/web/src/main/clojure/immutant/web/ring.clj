@@ -62,4 +62,4 @@
     (.getServletInfo servlet)))
 
 (defn proxy-servlet [servlet]
-  (::ServletProxy servlet))
+  (ServletProxy. servlet))

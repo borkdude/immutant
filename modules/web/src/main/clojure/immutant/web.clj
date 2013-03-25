@@ -37,7 +37,6 @@
 (defn start-handler
   "Typically not called directly; use start instead"
   [sub-context-path handler & {:keys [init destroy] :as opts}]
-  (log/info "JC: start-handler" opts)
   (log/info "Registering ring handler at sub-context path:" sub-context-path)
   (start* sub-context-path
           (ring/create-servlet (add-middleware handler opts))
