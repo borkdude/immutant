@@ -19,7 +19,6 @@
 
 package org.immutant.web.ring.processors;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,10 +35,9 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.web.SharedTldsMetaDataBuilder;
-import org.jboss.as.web.deployment.TldsMetaData;
-import org.jboss.as.web.deployment.WarMetaData;
-import org.jboss.dmr.ModelNode;
+import org.jboss.as.undertow.deployment.TldsMetaData;
+import org.jboss.as.web.common.SharedTldsMetaDataBuilder;
+import org.jboss.as.web.common.WarMetaData;
 import org.jboss.logging.Logger;
 import org.jboss.metadata.javaee.spec.EmptyMetaData;
 import org.jboss.metadata.web.jboss.JBossServletsMetaData;
@@ -151,14 +149,8 @@ public class RingWebApplicationInstaller implements DeploymentUnitProcessor {
     private void attachTldsMetaData(DeploymentUnit unit)
             throws DeploymentUnitProcessingException {
         final TldsMetaData tldsMetaData = new TldsMetaData();
-        // HACK: Remove reflection once SharedTldsMetaDataBuilder's constructor is public
-        try {
-            Constructor<SharedTldsMetaDataBuilder> ctor = SharedTldsMetaDataBuilder.class.getDeclaredConstructor( ModelNode.class );
-            ctor.setAccessible( true );
-            tldsMetaData.setSharedTlds( ctor.newInstance( new Object[] { null } ) );
-        } catch (Exception e) {
-            throw new DeploymentUnitProcessingException( e );
-        }
+        tldsMetaData.setSharedTlds( new SharedTldsMetaDataBuilder(null) );
+
         unit.putAttachment( TldsMetaData.ATTACHMENT_KEY, tldsMetaData );
     }
 

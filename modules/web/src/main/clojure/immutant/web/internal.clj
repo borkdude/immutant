@@ -19,7 +19,8 @@
   (:require
    [immutant.registry     :as registry]
    [immutant.util         :as util]
-   [clojure.tools.logging :as log]))
+   [clojure.tools.logging :as log])
+  (:import (org.jboss.as.web.host WebDeploymentBuilder ServletBuilder)))
 
 (def ^{:dynamic true} ^javax.servlet.http.HttpServletRequest current-servlet-request nil)
 
@@ -76,7 +77,7 @@
       vh
       [vh])))
 
-(defn install-servlet [servlet sub-context-path]
+#_(defn install-servlet [servlet sub-context-path]
   (let [context (registry/get "web-context")
         name (servlet-name sub-context-path)
         wrapper (.createWrapper context)
@@ -107,7 +108,29 @@
       (log/error "Failed to install servlet for" sub-context-path)
       wrapper)))
 
+(defn install-servlet [servlet sub-context-path]
+  (let [host (registry/get "web-host")
+        name (servlet-name sub-context-path)
+        sb (doto (ServletBuilder.)
+             (.setServlet servlet)
+             (.setServletClass (class servlet))
+             (.setServletName name)
+             (.addUrlMapping sub-context-path)
+             (.setForceInit true))
+        wdb (doto (WebDeploymentBuilder.)
+              (.setClassLoader (.getClassLoader (registry/get "clojure-runtime")))
+              (.setContextRoot "/foo";; (registry/get "internal-context-path")
+                               )
+              (.addServlet sb))]
+    (doto (.addWebDeployment host wdb)
+      (.create)
+      (.start))))
+
 (defn remove-servlet [sub-context-path wrapper]
+  (.stop wrapper)
+  (.destroy wrapper))
+
+#_(defn remove-servlet [sub-context-path wrapper]
   (let [context (registry/get "web-context")
         mapper (-> (registry/get "jboss.web")
                    (.getService)

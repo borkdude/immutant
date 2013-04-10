@@ -44,6 +44,7 @@ public class WebDependenciesProcessor implements DeploymentUnitProcessor {
 
         if (unit.hasAttachment( RingMetaData.ATTACHMENT_KEY )) {
             addDependency( moduleSpecification, moduleLoader, IMMUTANT_WEB_ID );
+            addDependency( moduleSpecification, moduleLoader, ModuleIdentifier.create("org.jboss.as.web-common") );
         }
     }
 

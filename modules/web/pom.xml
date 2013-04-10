@@ -80,13 +80,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.web</groupId>
-      <artifactId>jbossweb</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.jboss.as</groupId>
-      <artifactId>jboss-as-web</artifactId>
+      <artifactId>jboss-as-undertow</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

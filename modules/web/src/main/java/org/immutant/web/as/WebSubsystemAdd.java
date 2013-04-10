@@ -25,10 +25,11 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_
 
 import java.util.List;
 
+import org.immutant.web.ring.processors.InternalContextPathRegisteringProcessor;
 import org.immutant.web.ring.processors.RingApplicationRecognizer;
 import org.immutant.web.ring.processors.RingWebApplicationInstaller;
-import org.immutant.web.ring.processors.WebContextRegisteringProcessor;
-
+import org.immutant.web.ring.processors.WebContainerRegisteringProcessor;
+import org.immutant.web.ring.processors.WebHostRegisteringProcessor;
 import org.jboss.as.controller.AbstractBoottimeAddStepHandler;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -71,7 +72,9 @@ class WebSubsystemAdd extends AbstractBoottimeAddStepHandler {
         processorTarget.addDeploymentProcessor( WebExtension.SUBSYSTEM_NAME, Phase.DEPENDENCIES, 1, new WebDependenciesProcessor() );
         
         processorTarget.addDeploymentProcessor( WebExtension.SUBSYSTEM_NAME, Phase.INSTALL, 2100, new VirtualHostInstaller() );
-        processorTarget.addDeploymentProcessor( WebExtension.SUBSYSTEM_NAME, Phase.INSTALL, Phase.INSTALL_WAR_DEPLOYMENT + 1, new WebContextRegisteringProcessor() );
+        processorTarget.addDeploymentProcessor( WebExtension.SUBSYSTEM_NAME, Phase.INSTALL, Phase.INSTALL_WAR_DEPLOYMENT + 1, new WebContainerRegisteringProcessor() );
+        processorTarget.addDeploymentProcessor( WebExtension.SUBSYSTEM_NAME, Phase.INSTALL, Phase.INSTALL_WAR_DEPLOYMENT + 1, new WebHostRegisteringProcessor() );
+        processorTarget.addDeploymentProcessor( WebExtension.SUBSYSTEM_NAME, Phase.INSTALL, Phase.INSTALL_WAR_DEPLOYMENT + 1, new InternalContextPathRegisteringProcessor() );
     }
 
 

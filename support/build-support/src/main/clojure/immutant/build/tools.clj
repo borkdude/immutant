@@ -501,6 +501,7 @@
                               "org.jboss.as.standalone"
                               "org.jboss.as.domain-http-error-context"
                               "com.h2database.h2"
+                              "io.undertow.websocket"
                               "javaee.api"
                               "javax.servlet.jstl.api")
                              (find-full-required-module-set all-modules))]
