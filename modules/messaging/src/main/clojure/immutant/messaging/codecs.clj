@@ -31,6 +31,11 @@
   [^javax.jms.Message msg]
   (keyword (.getStringProperty msg encoding-header-name)))
 
+(defn message-bytes [message]
+  (let [bytes (byte-array (.getBodyLength message))]
+    (.readBytes message bytes)
+    bytes))
+
 (defprotocol AsText
   "Function for extracting text from a message."
   (message-text [message]))
@@ -38,9 +43,7 @@
 (extend-type BytesMessage
   AsText
   (message-text [message]
-    (let [bytes (byte-array (.getBodyLength message))]
-      (.readBytes message bytes)
-      (String. bytes))))
+    (String. (message-bytes message))))
 
 (extend-type TextMessage
   AsText
@@ -75,6 +78,12 @@
    (.createTextMessage session message)
    :text))
 
+(defmethod encode :serialized [^javax.jms.Session session message options]
+  "Serialize the payload using Java serialization."
+  (set-encoding
+   (.createObjectMessage session message)
+   :serialized))
+
 ;; Decode
 
 (defmulti decode (fn [message] (or (get-encoding message) :text)))
@@ -94,6 +103,10 @@
 (defmethod decode :text [message]
   "Treats the message payload as a raw string. No decoding is done."
   (message-text message))
+
+(defmethod decode :serialized [^javax.jms.ObjectMessage message]
+  "Treats the message as an ObjectMessage, retrieiving the serialzed Object."
+  (.getObject message))
 
 (defmethod decode :default [message]
   (throw (RuntimeException. (str "Received unknown message encoding: " (get-encoding message)))))

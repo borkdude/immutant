@@ -32,6 +32,18 @@
           (getObjectProperty [k]
             (.get properties k))
           (getPropertyNames []
+            (.keys properties)))))
+    (createObjectMessage [obj]
+      (let [properties (java.util.Hashtable.)]
+        (proxy [javax.jms.ObjectMessage] []
+          (getObject [] obj)
+          (setStringProperty [k,v]
+            (.put properties k v))
+          (getStringProperty [k]
+            (.get properties k))
+          (getObjectProperty [k]
+            (.get properties k))
+          (getPropertyNames []
             (.keys properties)))))))
 
 (defn bytes-message [content]
@@ -95,6 +107,21 @@
         encoded (encode (session-mock) message {:encoding :json})]
     (is (= message (decode encoded)))
     (is (.contains (.getText encoded) "{\"a\":\"b\",\"c\":[1,2,3,{\"foo\":42}]}"))))
+
+(deftest serialized-string
+  (test-codec "a simple text message" :serialized))
+
+(deftest serialized-date
+  (test-codec (java.util.Date.) :serialized))
+
+(deftest serialized-date-inside-hash
+  (test-codec {:date (java.util.Date.)} :serialized))
+
+(deftest serialized-date-inside-vector
+  (test-codec [(java.util.Date.)] :serialized))
+
+(deftest serialized-complex-hash
+  (test-codec {:a "b" :c [1 2 3 {:foo 42}]} :serialized))
 
 (deftest text
   (test-codec "ham biscuit" :text))
